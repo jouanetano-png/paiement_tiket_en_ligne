@@ -104,22 +104,23 @@
             return;
         }
 
-        FedaCheckout.init({
+        // CORRECTION ICI : Utiliser FedaPay au lieu de FedaCheckout
+        FedaPay.init({
             public_key: 'pk_sandbox_sWS69guumUK1eC2CVpruryYg',
             transaction: {
                 amount: montantChoisi,
                 description: descriptionChoisie
             },
             onComplete: function(response) {
-                if (response.status === 'approved') {
-                    // Message de succès avec le code WiFi
+                // Attention : FedaPay renvoie souvent l'objet sous response.transaction.status
+                if (response.status === 'approved' || (response.transaction && response.transaction.status === 'approved')) {
                     alert("PAIEMENT RÉUSSI !\n\nVotre code WiFi est : PALM-99-TEST\n\nMerci de votre confiance !");
                 } else {
-                    alert("Le paiement n'a pas été validé ou a été annulé.");
+                    alert("Le paiement n'a pas été validé.");
                 }
             }
         });
-        FedaCheckout.open();
+        FedaPay.open(); // CORRECTION ICI AUSSI
     }
 </script>
 
