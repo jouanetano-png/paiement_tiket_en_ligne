@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PalmNet WiFi - Paiement Sécurisé</title>
-    
     <style>
-        :root { --primary-blue: #4a7c82; --white: #ffffff; --wave-blue: #1c93e4; --wa-green: #25D366; --wa-dark: #128C7E; }
+        :root { --primary-blue: #4a7c82; --white: #ffffff; --wave-blue: #1c93e4; --wa-green: #25D366; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--primary-blue); color: var(--white); margin: 0; display: flex; justify-content: center; padding: 20px; }
         .card { background-color: var(--primary-blue); width: 100%; max-width: 500px; border: 3px solid white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 4px solid white; }
@@ -18,15 +17,10 @@
         td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
         .selected-row td { background-color: #ffffff !important; color: var(--primary-blue) !important; }
         .footer-action { padding: 25px; text-align: center; }
-        
-        .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+        .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
         .btn-wa { background-color: var(--wa-green) !important; display: none; } 
-        
-        .btn-help { background: none; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; cursor: pointer; margin-top: 15px; display: inline-flex; align-items: center; text-decoration: none; }
-        .btn-help:hover { background: rgba(255,255,255,0.1); }
-
+        .btn-help { background: none; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; cursor: pointer; margin-top: 15px; display: inline-flex; text-decoration: none; }
         #status-message { display: none; margin-bottom: 15px; font-weight: bold; background: white; color: var(--primary-blue); padding: 10px; border-radius: 5px; }
-        .steps { font-size: 13px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -36,103 +30,71 @@
         <div class="logo-text">PalmNet</div>
         <div class="wifi-icon-bg">Wi-Fi</div>
     </div>
-
     <div class="title-banner">NOS FORFAITS INTERNET</div>
-
-    <table id="priceTable">
-        <thead>
-            <tr>
-                <th>Prix</th>
-                <th>Validité</th>
-                <th>Forfait</th>
-            </tr>
-        </thead>
+    <table>
+        <thead><tr><th>Prix</th><th>Validité</th><th>Forfait</th></tr></thead>
         <tbody>
-            <tr onclick="selectPlan(this, 100, '2 Heures')">
-                <td>100 f</td>
-                <td>2 HEURES</td>
-                <td>2 H</td>
-            </tr>
-            <tr onclick="selectPlan(this, 300, '1 Jour')">
-                <td>300 f</td>
-                <td>1 JOUR</td>
-                <td>1 J</td>
-            </tr>
-            <tr onclick="selectPlan(this, 700, '1 Semaine')">
-                <td>700 f</td>
-                <td>1 SEMAINE</td>
-                <td>7 J</td>
-            </tr>
-            <tr onclick="selectPlan(this, 2000, '1 Mois')">
-                <td>2000 f</td>
-                <td>1 MOIS</td>
-                <td>30 J</td>
-            </tr>
+            <tr onclick="selectPlan(this, 100)"><td>100 f</td><td>2 HEURES</td><td>2 H</td></tr>
+            <tr onclick="selectPlan(this, 300)"><td>300 f</td><td>1 JOUR</td><td>1 J</td></tr>
+            <tr onclick="selectPlan(this, 700)"><td>700 f</td><td>1 SEMAINE</td><td>7 J</td></tr>
+            <tr onclick="selectPlan(this, 2000)"><td>2000 f</td><td>1 MOIS</td><td>30 J</td></tr>
         </tbody>
     </table>
-
     <div class="footer-action">
         <div id="status-message"></div>
-        
-        <button id="btnWave" class="btn-pay" onclick="payerWave()">1. Payer avec Wave</button>
+        <button id="btnWave" class="btn-pay" onclick="ouvrirLienWave()">1. Payer avec Wave</button>
         <button id="btnWA" class="btn-pay btn-wa" onclick="contacterWA()">2. Recevoir mon code sur WhatsApp</button>
-
-        <div class="steps">
-            <strong>Instructions :</strong><br>
-            1. Choisissez un forfait et cliquez sur le bouton bleu.<br>
-            2. Payez sur le compte Wave B2B.<br>
-            3. Cliquez sur le bouton vert WhatsApp pour votre code.
-        </div>
-
-        <a id="helpLink" href="#" class="btn-help" onclick="assistance()">
-            <span>🆘 Besoin d'aide ? Contactez-nous</span>
-        </a>
+        <br>
+        <a href="#" class="btn-help" onclick="assistance()">🆘 Besoin d'aide ?</a>
     </div>
 </div>
 
 <script>
     let montantChoisi = 0;
-    let descriptionChoisie = "";
+    let lienWaveActuel = "";
+    const NUMERO_WHATSAPP = "2250702980770";
 
-    // CONFIGURATION FINALE
-    const NUMERO_WHATSAPP = "2250702980770"; 
-    const NUMERO_B2B_WAVE = "CI-70745005";
+    // --- ICI ON AJOUTE TES LIENS WAVE BUSINESS ---
+    const LIENS_WAVE_FIXES = {
+        100: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=100",
+        300: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=300", 
+        700: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=700", 
+        2000: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=2000" 
+    };
 
-    function selectPlan(element, prix, duree) {
+    function selectPlan(element, prix) {
         const rows = document.querySelectorAll('tr');
         rows.forEach(row => row.classList.remove('selected-row'));
         element.classList.add('selected-row');
         
         montantChoisi = prix;
-        descriptionChoisie = "WiFi PalmNet " + duree;
+        lienWaveActuel = LIENS_WAVE_FIXES[prix];
         
         document.getElementById('status-message').style.display = 'block';
         document.getElementById('status-message').innerHTML = "✅ Forfait " + prix + "f sélectionné";
     }
 
-    function payerWave() {
-        if (montantChoisi === 0) {
-            alert("Veuillez d'abord sélectionner un forfait !");
+    function ouvrirLienWave() {
+        if (montantChoisi === 0) { alert("Sélectionnez un forfait !"); return; }
+        
+        if (lienWaveActuel === "") {
+            alert("Le lien pour " + montantChoisi + "f arrive bientôt. Testez celui de 100f !");
             return;
         }
-
-        const waveUrl = "https://pay.wave.com/m/" + NUMERO_B2B_WAVE + "?amount=" + montantChoisi;
-        window.open(waveUrl, '_blank');
-
+        
+        window.open(lienWaveActuel, '_blank');
         document.getElementById('btnWave').style.display = 'none';
         document.getElementById('btnWA').style.display = 'block';
     }
 
     function contacterWA() {
-        const message = "Bonjour PalmNet, je viens de payer " + montantChoisi + "f sur le compte B2B (" + descriptionChoisie + "). Merci de m'envoyer mon code.";
-        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(message);
+        const msg = "Bonjour PalmNet, j'ai payé " + montantChoisi + "f. Merci d'envoyer mon code.";
+        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
     }
 
     function assistance() {
-        const message = "Bonjour PalmNet, j'ai besoin d'aide concernant l'achat d'un forfait WiFi.";
-        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(message);
+        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=J'ai besoin d'aide pour PalmNet.";
     }
 </script>
-
 </body>
 </html>
