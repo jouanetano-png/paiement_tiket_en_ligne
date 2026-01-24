@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PalmNet WiFi - Paiement Automatique</title>
+    
+    <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+    
+    <style>
+        :root { --primary-blue: #4a7c82; --white: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--primary-blue); color: var(--white); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .card { background-color: var(--primary-blue); width: 100%; max-width: 500px; border: 3px solid white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 4px solid white; }
+        .logo-text { font-size: 32px; font-weight: bold; }
+        .wifi-icon-bg { background-color: white; color: var(--primary-blue); padding: 5px 15px; border-radius: 50px; font-weight: bold; }
+        .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: rgba(0,0,0,0.3); padding: 15px; }
+        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.3); font-weight: bold; cursor: pointer; }
+        tr:hover td { background-color: rgba(255,255,255,0.2); }
+        /* Style pour montrer quel forfait est sélectionné */
+        .selected-row td { background-color: #ffffff !important; color: var(--primary-blue) !important; }
+        .footer-action { padding: 25px; text-align: center; }
+        .btn-pay { background-color: white; color: var(--primary-blue); border: none; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; }
+        #status-message { display: none; margin-top: 15px; font-weight: bold; background: #28a745; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div class="logo-text">PalmNet</div>
+        <div class="wifi-icon-bg">Wi Fi</div>
+    </div>
+
+    <div class="title-banner">WIFI ZONE TARIFICATION</div>
+
+    <table id="priceTable">
+        <thead>
+            <tr>
+                <th>Prix</th>
+                <th>Validité</th>
+                <th>Forfait</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr onclick="selectPlan(this, 100, '2 Heures')">
+                <td style="font-style: italic;">100f</td>
+                <td>2 HEURES</td>
+                <td>2 H</td>
+            </tr>
+            <tr onclick="selectPlan(this, 300, '1 Jour')">
+                <td style="font-style: italic;">300f</td>
+                <td>1 JOURS</td>
+                <td>1 J</td>
+            </tr>
+            <tr onclick="selectPlan(this, 700, '1 Semaine')">
+                <td style="font-style: italic;">700f</td>
+                <td>1 SEMAINE</td>
+                <td>7 J</td>
+            </tr>
+            <tr onclick="selectPlan(this, 1300, '2 Semaines')">
+                <td style="font-style: italic;">1300f</td>
+                <td>2 SEMAINE</td>
+                <td>14 J</td>
+            </tr>
+            <tr onclick="selectPlan(this, 2000, '1 Mois')">
+                <td style="font-style: italic;">2000f</td>
+                <td>1 MOIS</td>
+                <td>30 J</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-action">
+        <button class="btn-pay" onclick="ouvrirPaiement()">Acheter le ticket</button>
+        <div id="status-message"></div>
+    </div>
+</div>
+
+<script>
+    let montantChoisi = 0;
+    let descriptionChoisie = "";
+
+    // Fonction pour gérer le clic sur une ligne du tableau
+    function selectPlan(element, prix, duree) {
+        const rows = document.querySelectorAll('tr');
+        rows.forEach(row => row.classList.remove('selected-row'));
+        
+        element.classList.add('selected-row');
+        
+        montantChoisi = prix;
+        descriptionChoisie = "WiFi PalmNet " + duree;
+        
+        document.getElementById('status-message').style.display = 'block';
+        document.getElementById('status-message').innerHTML = "✅ Forfait " + prix + "f sélectionné";
+    }
+
+    // Fonction pour lancer FedaPay
+    function ouvrirPaiement() {
+        if (montantChoisi === 0) {
+            alert("Cliquez sur un prix dans le tableau pour choisir !");
+            return;
+        }
+
+        FedaCheckout.init({
+            public_key: 'pk_sandbox_sWS69guumUK1eC2CVpruryYg',
+            transaction: {
+                amount: montantChoisi,
+                description: descriptionChoisie
+            },
+            onComplete: function(response) {
+                if (response.status === 'approved') {
+                    // Message de succès avec le code WiFi
+                    alert("PAIEMENT RÉUSSI !\n\nVotre code WiFi est : PALM-99-TEST\n\nMerci de votre confiance !");
+                } else {
+                    alert("Le paiement n'a pas été validé ou a été annulé.");
+                }
+            }
+        });
+        FedaCheckout.open();
+    }
+</script>
+
+</body>
+</html>
