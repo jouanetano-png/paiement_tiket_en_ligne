@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalmNet WiFi - Paiement Sécurisé</title>
+    <title>PalmNet WiFi - Système Automatique</title>
     <style>
         :root { --primary-blue: #4a7c82; --white: #ffffff; --wave-blue: #1c93e4; --wa-green: #25D366; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--primary-blue); color: var(--white); margin: 0; display: flex; justify-content: center; padding: 20px; }
@@ -11,16 +11,20 @@
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 4px solid white; }
         .logo-text { font-size: 32px; font-weight: bold; }
         .wifi-icon-bg { background-color: white; color: var(--primary-blue); padding: 5px 15px; border-radius: 50px; font-weight: bold; }
-        .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; }
+        .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; font-size: 14px; }
+        
+        /* Champ Numéro */
+        .input-group { padding: 15px 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: bold; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; color: #333; }
+
         table { width: 100%; border-collapse: collapse; }
-        th { background-color: rgba(0,0,0,0.3); padding: 15px; }
-        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
+        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; transition: 0.3s; }
         .selected-row td { background-color: #ffffff !important; color: var(--primary-blue) !important; }
+        
         .footer-action { padding: 25px; text-align: center; }
-        .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; margin-bottom: 10px; }
-        .btn-wa { background-color: var(--wa-green) !important; display: none; } 
-        .btn-help { background: none; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; cursor: pointer; margin-top: 15px; display: inline-flex; text-decoration: none; }
-        #status-message { display: none; margin-bottom: 15px; font-weight: bold; background: white; color: var(--primary-blue); padding: 10px; border-radius: 5px; }
+        .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-pay:disabled { background-color: #ccc; cursor: not-allowed; border-color: #999; }
     </style>
 </head>
 <body>
@@ -30,70 +34,111 @@
         <div class="logo-text">PalmNet</div>
         <div class="wifi-icon-bg">Wi-Fi</div>
     </div>
-    <div class="title-banner">NOS FORFAITS INTERNET</div>
+
+    <div class="title-banner">1. ENTREZ VOTRE NUMÉRO WAVE</div>
+    <div class="input-group">
+        <input type="tel" id="clientPhone" placeholder="Ex: 0707070707" maxlength="10">
+    </div>
+
+    <div class="title-banner">2. CHOISISSEZ VOTRE FORFAIT</div>
     <table>
-        <thead><tr><th>Prix</th><th>Validité</th><th>Forfait</th></tr></thead>
         <tbody>
             <tr onclick="selectPlan(this, 100)"><td>100 f</td><td>2 HEURES</td><td>2 H</td></tr>
             <tr onclick="selectPlan(this, 300)"><td>300 f</td><td>1 JOUR</td><td>1 J</td></tr>
             <tr onclick="selectPlan(this, 700)"><td>700 f</td><td>1 SEMAINE</td><td>7 J</td></tr>
+            <tr onclick="selectPlan(this, 1300)"><td>1300 f</td><td>2 SEMAINES</td><td>14 J</td></tr>
             <tr onclick="selectPlan(this, 2000)"><td>2000 f</td><td>1 MOIS</td><td>30 J</td></tr>
         </tbody>
     </table>
+
     <div class="footer-action">
-        <div id="status-message"></div>
-        <button id="btnWave" class="btn-pay" onclick="ouvrirLienWave()">1. Payer avec Wave</button>
-        <button id="btnWA" class="btn-pay btn-wa" onclick="contacterWA()">2. Recevoir mon code sur WhatsApp</button>
-        <br>
-        <a href="#" class="btn-help" onclick="assistance()">🆘 Besoin d'aide ?</a>
+        <button id="btnAction" class="btn-pay" onclick="lancerProcessus()">Payer avec Wave</button>
     </div>
 </div>
 
 <script>
     let montantChoisi = 0;
-    let lienWaveActuel = "";
+    let waveOuvert = false;
     const NUMERO_WHATSAPP = "2250702980770";
+    // TON NOUVEAU LIEN DE DÉPLOIEMENT
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD9v5E3s2-L2_p71pPlWSNRVI9VU5CFPQ8l_JTDOESNsQuncLkCaDRDBAH20H56JS7tQ/exec";
 
-    // --- ICI ON AJOUTE TES LIENS WAVE BUSINESS ---
-    const LIENS_WAVE_FIXES = {
+    const LIENS_WAVE = {
         100: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=100",
-        300: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=300", 
-        700: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=700", 
-        2000: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=2000" 
+        300: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=300",
+        700: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=700",
+        1300: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=1300",
+        2000: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=2000"
     };
 
     function selectPlan(element, prix) {
-        const rows = document.querySelectorAll('tr');
-        rows.forEach(row => row.classList.remove('selected-row'));
+        document.querySelectorAll('tr').forEach(row => row.classList.remove('selected-row'));
         element.classList.add('selected-row');
-        
         montantChoisi = prix;
-        lienWaveActuel = LIENS_WAVE_FIXES[prix];
-        
-        document.getElementById('status-message').style.display = 'block';
-        document.getElementById('status-message').innerHTML = "✅ Forfait " + prix + "f sélectionné";
     }
 
-    function ouvrirLienWave() {
-        if (montantChoisi === 0) { alert("Sélectionnez un forfait !"); return; }
-        
-        if (lienWaveActuel === "") {
-            alert("Le lien pour " + montantChoisi + "f arrive bientôt. Testez celui de 100f !");
+    async function lancerProcessus() {
+        const phone = document.getElementById('clientPhone').value.trim();
+        const btn = document.getElementById('btnAction');
+
+        // Vérifications de base
+        if (!phone || phone.length < 8) { 
+            alert("Veuillez entrer un numéro de téléphone valide."); 
+            return; 
+        }
+        if (montantChoisi === 0) { 
+            alert("Veuillez sélectionner un forfait."); 
+            return; 
+        }
+
+        // ÉTAPE 1 : OUVERTURE DE WAVE
+        if (!waveOuvert) {
+            window.open(LIENS_WAVE[montantChoisi], '_blank');
+            waveOuvert = true;
+            btn.innerHTML = "J'AI PAYÉ, RECEVOIR MON CODE";
+            btn.style.backgroundColor = "#25D366"; // Couleur WhatsApp
             return;
         }
-        
-        window.open(lienWaveActuel, '_blank');
-        document.getElementById('btnWave').style.display = 'none';
-        document.getElementById('btnWA').style.display = 'block';
+
+        // ÉTAPE 2 : RÉCUPÉRATION DU CODE DEPUIS GOOGLE SHEETS
+        btn.innerHTML = "VÉRIFICATION EN COURS...";
+        btn.disabled = true;
+
+        try {
+            // Appel du script avec le montant et le numéro du client
+            const response = await fetch(SCRIPT_URL + "?montant=" + montantChoisi + "&numero=" + phone);
+            const codeRecu = await response.text();
+
+            if (!codeRecu || codeRecu.trim() === "" || codeRecu === "STOCK_EPUISE") {
+                alert("Désolé, il n'y a plus de codes disponibles pour ce forfait ou une erreur est survenue.");
+                resetBouton(btn);
+                return;
+            }
+
+            // Préparation du message WhatsApp
+            const msg = "✅ PAIEMENT EFFECTUÉ\n" +
+                        "Client : " + phone + "\n" +
+                        "Forfait : " + montantChoisi + "f\n" +
+                        "MON CODE WIFI : " + codeRecu + "\n\n" +
+                        "Merci de valider ce message pour confirmer mon accès.";
+            
+            // Redirection vers WhatsApp
+            window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
+            
+            // Reset après un délai pour permettre une nouvelle commande si besoin
+            setTimeout(() => resetBouton(btn), 5000);
+
+        } catch (error) {
+            alert("Erreur de connexion au serveur de codes. Veuillez réessayer.");
+            resetBouton(btn);
+        }
     }
 
-    function contacterWA() {
-        const msg = "Bonjour PalmNet, j'ai payé " + montantChoisi + "f. Merci d'envoyer mon code.";
-        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
-    }
-
-    function assistance() {
-        window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=J'ai besoin d'aide pour PalmNet.";
+    function resetBouton(btn) {
+        waveOuvert = false;
+        btn.disabled = false;
+        btn.innerHTML = "Payer avec Wave";
+        btn.style.backgroundColor = "";
     }
 </script>
 </body>
