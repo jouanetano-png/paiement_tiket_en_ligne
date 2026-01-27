@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalmNet WiFi - Système Automatique</title>
+    <title>PalmNet WiFi - Paiement Sécurisé</title>
     <style>
         :root { --primary-blue: #4a7c82; --white: #ffffff; --wave-blue: #1c93e4; --wa-green: #25D366; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--primary-blue); color: var(--white); margin: 0; display: flex; justify-content: center; padding: 20px; }
@@ -13,18 +13,20 @@
         .wifi-icon-bg { background-color: white; color: var(--primary-blue); padding: 5px 15px; border-radius: 50px; font-weight: bold; }
         .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; font-size: 14px; }
         
-        /* Champ Numéro */
         .input-group { padding: 15px 20px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: bold; }
         input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; color: #333; }
+        input:disabled { background-color: #ddd; }
 
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; transition: 0.3s; }
+        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
         .selected-row td { background-color: #ffffff !important; color: var(--primary-blue) !important; }
+        
+        .locked { pointer-events: none; opacity: 0.6; }
         
         .footer-action { padding: 25px; text-align: center; }
         .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        .btn-pay:disabled { background-color: #ccc; cursor: not-allowed; border-color: #999; }
+        .btn-pay:disabled { background-color: #ccc; cursor: not-allowed; }
+        #lock-msg { display: none; font-size: 13px; margin-top: 10px; color: #ffeb3b; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,13 +37,15 @@
         <div class="wifi-icon-bg">Wi-Fi</div>
     </div>
 
-    <div class="title-banner">1. ENTREZ VOTRE NUMÉRO WAVE</div>
-    <div class="input-group">
-        <input type="tel" id="clientPhone" placeholder="Ex: 0707070707" maxlength="10">
+    <div id="section-phone">
+        <div class="title-banner">1. VOTRE NUMÉRO WAVE</div>
+        <div class="input-group">
+            <input type="tel" id="clientPhone" placeholder="Ex: 0707070707" maxlength="10">
+        </div>
     </div>
 
     <div class="title-banner">2. CHOISISSEZ VOTRE FORFAIT</div>
-    <table>
+    <table id="forfaitTable">
         <tbody>
             <tr onclick="selectPlan(this, 100)"><td>100 f</td><td>2 HEURES</td><td>2 H</td></tr>
             <tr onclick="selectPlan(this, 300)"><td>300 f</td><td>1 JOUR</td><td>1 J</td></tr>
@@ -53,14 +57,15 @@
 
     <div class="footer-action">
         <button id="btnAction" class="btn-pay" onclick="lancerProcessus()">Payer avec Wave</button>
+        <div id="lock-msg">🔒 FORFAIT VERROUILLÉ POUR LE PAIEMENT</div>
     </div>
 </div>
 
 <script>
     let montantChoisi = 0;
     let waveOuvert = false;
+    
     const NUMERO_WHATSAPP = "2250702980770";
-    // TON NOUVEAU LIEN DE DÉPLOIEMENT
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD9v5E3s2-L2_p71pPlWSNRVI9VU5CFPQ8l_JTDOESNsQuncLkCaDRDBAH20H56JS7tQ/exec";
 
     const LIENS_WAVE = {
@@ -72,6 +77,7 @@
     };
 
     function selectPlan(element, prix) {
+        if (waveOuvert) return; 
         document.querySelectorAll('tr').forEach(row => row.classList.remove('selected-row'));
         element.classList.add('selected-row');
         montantChoisi = prix;
@@ -80,65 +86,64 @@
     async function lancerProcessus() {
         const phone = document.getElementById('clientPhone').value.trim();
         const btn = document.getElementById('btnAction');
+        const table = document.getElementById('forfaitTable');
+        const lockMsg = document.getElementById('lock-msg');
 
-        // Vérifications de base
-        if (!phone || phone.length < 8) { 
-            alert("Veuillez entrer un numéro de téléphone valide."); 
-            return; 
-        }
-        if (montantChoisi === 0) { 
-            alert("Veuillez sélectionner un forfait."); 
-            return; 
-        }
+        if (!phone || phone.length < 8) { alert("Numéro invalide !"); return; }
+        if (montantChoisi === 0) { alert("Sélectionnez un forfait !"); return; }
 
-        // ÉTAPE 1 : OUVERTURE DE WAVE
         if (!waveOuvert) {
-            window.open(LIENS_WAVE[montantChoisi], '_blank');
             waveOuvert = true;
+            table.classList.add('locked');
+            document.getElementById('clientPhone').disabled = true;
+            lockMsg.style.display = 'block';
+
+            window.open(LIENS_WAVE[montantChoisi], '_blank');
+            
             btn.innerHTML = "J'AI PAYÉ, RECEVOIR MON CODE";
-            btn.style.backgroundColor = "#25D366"; // Couleur WhatsApp
+            btn.style.backgroundColor = "#25D366"; 
             return;
         }
 
-        // ÉTAPE 2 : RÉCUPÉRATION DU CODE DEPUIS GOOGLE SHEETS
-        btn.innerHTML = "VÉRIFICATION EN COURS...";
+        btn.innerHTML = "VÉRIFICATION...";
         btn.disabled = true;
 
         try {
-            // Appel du script avec le montant et le numéro du client
             const response = await fetch(SCRIPT_URL + "?montant=" + montantChoisi + "&numero=" + phone);
             const codeRecu = await response.text();
 
             if (!codeRecu || codeRecu.trim() === "" || codeRecu === "STOCK_EPUISE") {
-                alert("Désolé, il n'y a plus de codes disponibles pour ce forfait ou une erreur est survenue.");
-                resetBouton(btn);
+                alert("Plus de codes disponibles.");
+                resetInterface();
                 return;
             }
 
-            // Préparation du message WhatsApp
+            // --- MESSAGE WHATSAPP AVEC GRANDS ESPACES ET CONSIGNES ---
             const msg = "✅ PAIEMENT EFFECTUÉ\n" +
                         "Client : " + phone + "\n" +
                         "Forfait : " + montantChoisi + "f\n" +
-                        "MON CODE WIFI : " + codeRecu + "\n\n" +
-                        "Merci de valider ce message pour confirmer mon accès.";
+                        "CODE WIFI : " + codeRecu + "\n\n" +
+                        "⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️\n\n" +
+                        "*TRANSFERT LE MESSAGE POUR VALIDATION DU CODE*";
             
-            // Redirection vers WhatsApp
             window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
-            
-            // Reset après un délai pour permettre une nouvelle commande si besoin
-            setTimeout(() => resetBouton(btn), 5000);
-
         } catch (error) {
-            alert("Erreur de connexion au serveur de codes. Veuillez réessayer.");
-            resetBouton(btn);
+            alert("Erreur serveur.");
+            btn.disabled = false;
+            btn.innerHTML = "RÉESSAYER";
         }
     }
 
-    function resetBouton(btn) {
+    function resetInterface() {
         waveOuvert = false;
+        const btn = document.getElementById('btnAction');
+        const table = document.getElementById('forfaitTable');
         btn.disabled = false;
         btn.innerHTML = "Payer avec Wave";
         btn.style.backgroundColor = "";
+        table.classList.remove('locked');
+        document.getElementById('clientPhone').disabled = false;
+        document.getElementById('lock-msg').style.display = 'none';
     }
 </script>
 </body>
