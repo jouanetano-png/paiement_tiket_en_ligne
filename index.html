@@ -1,9 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PalmNet WiFi - Paiement Sécurisé</title>
+    <style>
+        :root { --primary-blue: #4a7c82; --white: #ffffff; --wave-blue: #1c93e4; --wa-green: #25D366; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--primary-blue); color: var(--white); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .card { background-color: var(--primary-blue); width: 100%; max-width: 500px; border: 3px solid white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 4px solid white; }
+        .logo-text { font-size: 32px; font-weight: bold; }
+        .wifi-icon-bg { background-color: white; color: var(--primary-blue); padding: 5px 15px; border-radius: 50px; font-weight: bold; }
+        .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; font-size: 14px; }
+        
+        .input-group { padding: 15px 20px; text-align: left; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; color: #333; }
+        input:disabled { background-color: #ddd; }
+
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; cursor: pointer; }
+        .selected-row td { background-color: #ffffff !important; color: var(--primary-blue) !important; }
+        
+        .locked { pointer-events: none; opacity: 0.6; }
+        
+        .footer-action { padding: 25px; text-align: center; }
+        .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-pay:disabled { background-color: #ccc; cursor: not-allowed; }
+        #lock-msg { display: none; font-size: 13px; margin-top: 10px; color: #ffeb3b; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div class="logo-text">PalmNet</div>
+        <div class="wifi-icon-bg">Wi-Fi</div>
+    </div>
+
+    <div id="section-phone">
+        <div class="title-banner">1. VOTRE NUMÉRO WAVE</div>
+        <div class="input-group">
+            <input type="tel" id="clientPhone" placeholder="Ex: 0707070707" maxlength="10">
+        </div>
+    </div>
+
+    <div class="title-banner">2. CHOISISSEZ VOTRE FORFAIT</div>
+    <table id="forfaitTable">
+        <tbody>
+            <tr onclick="selectPlan(this, 100)"><td>100 f</td><td>2 HEURES</td><td>2 H</td></tr>
+            <tr onclick="selectPlan(this, 300)"><td>300 f</td><td>1 JOUR</td><td>1 J</td></tr>
+            <tr onclick="selectPlan(this, 700)"><td>700 f</td><td>1 SEMAINE</td><td>7 J</td></tr>
+            <tr onclick="selectPlan(this, 1300)"><td>1300 f</td><td>2 SEMAINES</td><td>14 J</td></tr>
+            <tr onclick="selectPlan(this, 2000)"><td>2000 f</td><td>1 MOIS</td><td>30 J</td></tr>
+        </tbody>
+    </table>
+
+    <div class="footer-action">
+        <button id="btnAction" class="btn-pay" onclick="lancerProcessus()">Payer avec Wave</button>
+        <div id="lock-msg">🔒 FORFAIT VERROUILLÉ POUR LE PAIEMENT</div>
+    </div>
+</div>
+
 <script>
     let montantChoisi = 0;
     let waveOuvert = false;
     
     const NUMERO_WHATSAPP = "2250702980770";
-    // CORRECTION ICI : J'ai enlevé le ";" et la guillemet en trop à la fin
     const SCRIPT_URL = "https://paiement-tiket-en-ligne.vercel.app/api/verifier";
 
     const LIENS_WAVE = {
@@ -47,7 +109,6 @@
         btn.disabled = true;
 
         try {
-            // Appel de ton API Vercel
             const response = await fetch(SCRIPT_URL + "?montant=" + montantChoisi + "&numero=" + phone);
             const codeRecu = await response.text();
 
@@ -61,26 +122,4 @@
                         "Client : " + phone + "\n" +
                         "Forfait : " + montantChoisi + "f\n" +
                         "CODE WIFI : " + codeRecu + "\n\n" +
-                        "⬇️⬇️⬇️⬇️⬇️⬇️⬇️⬇️\n\n" +
-                        "*TRANSFERT LE MESSAGE POUR VALIDATION DU CODE*";
-            
-            window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
-        } catch (error) {
-            alert("Erreur de connexion au serveur.");
-            btn.disabled = false;
-            btn.innerHTML = "RÉESSAYER";
-        }
-    }
-
-    function resetInterface() {
-        waveOuvert = false;             
-        const btn = document.getElementById('btnAction');
-        const table = document.getElementById('forfaitTable');
-        btn.disabled = false;
-        btn.innerHTML = "Payer avec Wave";
-        btn.style.backgroundColor = "";
-        table.classList.remove('locked');
-        document.getElementById('clientPhone').disabled = false;
-        document.getElementById('lock-msg').style.display = 'none';
-    }
-</script>
+                        "⬇️⬇️⬇️⬇️⬇
