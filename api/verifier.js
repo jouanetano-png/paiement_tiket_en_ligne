@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     // 2. Récupération des données envoyées par ton site
     const { montant, numero } = req.query;
 
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD9v5E3s2-L2_p71pPlWSNRVI9VU5CFPQ8l_JTDOESNsQuncLkCaDRDBAH20H56JS7tQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHK6kbjX5Q99oOvU1Av_ffaEqEMs3XGeqaCilrhWIEffufPqFS6Tk6MeUkWkm1_45PRg/exec";
 
     try {
         // 3. Appel du Google Script
