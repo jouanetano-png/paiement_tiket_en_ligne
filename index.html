@@ -13,7 +13,7 @@
         .wifi-icon-bg { background-color: white; color: var(--primary-blue); padding: 5px 15px; border-radius: 50px; font-weight: bold; }
         .title-banner { background-color: rgba(0,0,0,0.2); padding: 10px; font-weight: bold; text-align: center; font-size: 14px; }
         .input-group { padding: 15px 20px; text-align: left; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; color: #333; outline: none; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; color: #333; outline: none; text-align: center; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; }
         tr { cursor: pointer; transition: 0.2s; }
         td { padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.2); font-weight: bold; }
@@ -21,6 +21,7 @@
         .locked { pointer-events: none; opacity: 0.6; }
         .footer-action { padding: 25px; text-align: center; }
         .btn-pay { background-color: var(--wave-blue); color: white; border: 2px solid white; padding: 18px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-pay:disabled { background-color: #ccc; cursor: not-allowed; }
         #lock-msg { display: none; font-size: 13px; margin-top: 10px; color: #ffeb3b; font-weight: bold; }
     </style>
 </head>
@@ -31,9 +32,9 @@
         <div class="wifi-icon-bg">Wi-Fi</div>
     </div>
     <div id="section-phone">
-        <div class="title-banner">1. VOTRE NUMÉRO WAVE</div>
+        <div class="title-banner">1. VOTRE NUMÉRO WAVE (10 CHIFFRES)</div>
         <div class="input-group">
-            <input type="tel" id="clientPhone" placeholder="Ex: 0707070707" maxlength="10">
+            <input type="tel" id="clientPhone" placeholder="05XXXXXXXX" maxlength="10">
         </div>
     </div>
     <div class="title-banner">2. CHOISISSEZ VOTRE FORFAIT</div>
@@ -56,7 +57,7 @@
     let montantChoisi = 0;
     let waveOuvert = false;
     const NUMERO_WHATSAPP = "2250702980770";
-    const SCRIPT_URL = "/api/verifier"; // URL relative pour Vercel
+    const SCRIPT_URL = "/api/verifier"; 
 
     const LIENS_WAVE = {
         100: "https://pay.wave.com/m/M_ci_PP4hSaF9_-Oe/c/ci/?amount=100",
@@ -80,21 +81,43 @@
         const table = document.getElementById('forfaitTable');
         const lockMsg = document.getElementById('lock-msg');
 
-        if (!phone || phone.length < 8) { alert("Numéro invalide !"); return; }
-        if (montantChoisi === 0) { alert("Veuillez sélectionner un forfait !"); return; }
+        // Validation du numéro (Doit être exactement 10 chiffres)
+        if (!/^[0-9]{10}$/.test(phone)) { 
+            alert("Veuillez entrer un numéro valide de 10 chiffres (ex: 0501020304)"); 
+            return; 
+        }
+        
+        if (montantChoisi === 0) { 
+            alert("Veuillez sélectionner un forfait !"); 
+            return; 
+        }
 
         if (!waveOuvert) {
             waveOuvert = true;
             table.classList.add('locked');
             document.getElementById('clientPhone').disabled = true;
             lockMsg.style.display = 'block';
+            
+            // Ouvrir Wave
             window.open(LIENS_WAVE[montantChoisi], '_blank');
-            btn.innerHTML = "J'AI PAYÉ, RECEVOIR MON CODE";
-            btn.style.backgroundColor = "#25D366"; 
+            
+            // Petit délai avant de permettre la vérification
+            btn.disabled = true;
+            let countdown = 5;
+            const timer = setInterval(() => {
+                btn.innerHTML = `VÉRIFICATION POSSIBLE DANS ${countdown}s`;
+                countdown--;
+                if (countdown < 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.innerHTML = "J'AI PAYÉ, RECEVOIR MON CODE";
+                    btn.style.backgroundColor = "#25D366"; 
+                }
+            }, 1000);
             return;
         }
 
-        btn.innerHTML = "VÉRIFICATION...";
+        btn.innerHTML = "VÉRIFICATION EN COURS...";
         btn.disabled = true;
 
         try {
@@ -102,16 +125,18 @@
             const data = await response.json();
 
             if (!data.code || data.code === "PAIEMENT_NON_TROUVE") {
-                alert("Paiement non encore détecté. Patientez 10s et réessayez.");
+                alert("Paiement non encore détecté. Assurez-vous d'avoir validé sur l'application Wave, puis réessayez.");
                 btn.disabled = false;
-                btn.innerHTML = "J'AI PAYÉ, RECEVOIR MON CODE";
+                btn.innerHTML = "RÉESSAYER LA VÉRIFICATION";
                 return;
             }
 
+            // Succès : Envoi vers WhatsApp
             const msg = `✅ PAIEMENT EFFECTUÉ\nClient : ${phone}\nForfait : ${montantChoisi}f\nCODE WIFI : ${data.code}\n\n*GARDER CE MESSAGE PRÉCIEUSEMENT*`;
             window.location.href = "https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(msg);
+            
         } catch (error) {
-            alert("Erreur de connexion au serveur.");
+            alert("Erreur réseau. Vérifiez votre connexion ou réessayez.");
             btn.disabled = false;
             btn.innerHTML = "RÉESSAYER";
         }
